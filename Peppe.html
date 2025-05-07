@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestione Designazioni Arbitrali</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; background: #f5f5f5; }
+    h1 { color: #333; font-size: 18px; text-align: center; }
+    .section-title { font-size: 16px; font-weight: bold; margin-top: 30px; text-align: center; }
+
+    .login-form { max-width: 400px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .login-form h2 { text-align: center; margin-bottom: 20px; }
+    .login-form input[type="text"],
+    .login-form input[type="password"],
+    .login-form button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .login-form button { background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .login-form button:hover { background-color: #0056b3; }
+    .login-error { color: red; font-size: 12px; text-align: center; min-height: 1.2em; }
+
+    .table-container { overflow: auto; max-height: 600px; margin-top: 15px; }
+
+    table { border-collapse: collapse; background: #fff; font-size: 12px; min-width: 1200px; width: 100%; border: 1px solid #ccc; }
+    th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: center; white-space: nowrap; vertical-align: middle; }
+
+    thead th { background-color: #eee; position: sticky; top: 0; z-index: 2; cursor: pointer; }
+    thead th:first-child, tbody td:first-child {
+      position: sticky; left: 0; background: #fff; z-index: 1; text-align: left; font-weight: bold; min-width: 150px;
+    }
+    thead th:first-child { background-color: #eee; z-index: 3; }
+    thead th:nth-child(2), tbody td:nth-child(2) {
+      min-width: 60px; font-weight: bold; background-color: #f0f8ff;
+    }
+
+    select, input[type="checkbox"] { padding: 3px; font-size: 12px; margin: 2px 0; vertical-align: middle; }
+    .indisponibilita-select { display: none; margin-left: 5px; }
+    .giorni-parziali { display: none; font-size: 11px; margin-top: 3px; }
+    .giorni-parziali label { margin-right: 5px; }
+
+    td.indisponibile { background-color: #ffcccc !important; }
+    td.designato { background-color: #ccffcc; }
+
+    .colonna-selezionata { background-color: #fff8b3 !important; }
+
+    #export-btn { margin: 10px 0; padding: 8px 12px; font-size: 12px; cursor: pointer; }
+    .hidden { display: none; }
+
+    .categoria-box { background-color: #ffffff; padding: 15px; border-radius: 8px; border: 2px solid #333; margin-top: 20px; }
+    .categoria-box h2 { text-align: center; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="login" class="login-form">
+  <h2>Login Gestione Arbitri</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button id="login-btn">Accedi</button>
+  <p id="login-error" class="login-error"></p>
+</div>
+
+<div id="dashboard" class="hidden">
+  <h1>Gestione Designazioni Arbitrali</h1>
+  <button id="export-btn">Esporta Dati (PDF)</button>
+
+  <div class="categoria-box">
+    <h2>UNDER 15 - UNDER 14</h2>
+
+    <div class="section-title">UNDER 15</div>
+    <div class="table-container"><table id="designazioni-table"></table></div>
+
+    <div class="section-title">UNDER 14</div>
+    <div class="table-container"><table id="designazioni-table-2"></table></div>
+
+    <div class="section-title">PENULTIMO CORSO</div>
+    <div class="table-container"><table id="designazioni-table-3"></table></div>
+    <div class="section-title">ULTIMO CORSO</div>
+    <div class="table-container"><table id="designazioni-table-4"></table></div>  
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+const validUser = "designatore";
+//qui si aggiungono gli arbitri e le categorie
+const arbitriUNDER15 = [ "AUTORIELLO SIMONE", "BARBARO ENRICO EMANUELE", "BERTINO ANGELO SAMUELE", "CALIENDO STEFANO", "CALIGNANO SIMONE", "CETARA BRUNO", "COLAMAZZA FRANCESCO (U15 reg. M. PERNA )", "DE MARSANICH CHIARA", "DI PAOLO MANUELA", "COZZOLINO RAFFAELLE", "ESPOSITO CHRISTIAN", "IMPROTA GENNARO", "LEMBO LEONARDO PIO (U15 Naz Turris)", "LUCIDI ROBERTO", "MARCHESE ANTONIO (U17 reg BARONE)", "MARINELLI GIOVANNI", "MIRANDA GIOVANNI", "SALERNITANO FRANCESCO", "SCOGNAMIGLIO LORENZO", "TUTUCCI VITTORIO FABIO (U14 prov. M.PERNA)", "VARSALLONA GIOVANNI", "VIVACE GIANLUCA" ];
+const arbitriUNDER14 = [ "AUTIERO MARIA LETIZIA", "BIANCO GABRIELE", "IACONE FRANCESCO PAOLO", "CASUCCI CARLO (U15 reg M.PERNA)", "CETRANGOLO FRANCESCO", "CORALLO MATTIA", "COZZOLINO ALFONSO", "DE CICCO LUIGI (U15 reg. E. TROISE)", "DE MARTINO GIOVANNI", "DE BENEDICTIS FRANCESCO", "DELL'AVERSANO RENATO", "ESPOSITO ROBERTO", "IACOBELLI SIMONE", "INCORONATO FABIO", "LA MARCA FELICE", "LANA SALVATORE (U15 reg. R.CASAREA)", "LOMBARDI MASSIMO", "MANZO GABRIELE", "OLIVIERO DANILO", "OLIVIERO EUGENIO", "CAMANZO ANTONIO", "CICATIELLO MARCO", "CUCINIELLO GIULIO", "FORMICOLA THERESA", "FORMISANO PASQUALE (U15 reg. M.PERNA)", "GIORDANO ANTONIO (U15 reg. PELUSO)", "GISONNA GIANMARCO", "GUADAGNO PASQUALE (U15 AVELLINO)", "LANZA GENNARO", "MONTEFORTE CIRO", "RAIA ANTONIO", "PAGANO GIUSEPPE", "PENNA SAMUEL 19.4", "PESCE MANUEL (U15 reg. BOCA)", "PORCEDDA VERONICA", "RICCI VALERIO", "RICCIO LUIGI (U15 prov. INCONTRO)", "RUSSO GIOVANNI", "RUSSO LIVIO", "VOLLARO PAOLO", "ZIGARELLI DAVIDE"];
+
+const arbitriFascia3 = [ "BARBATO SWAMI 13.4", "D'ACUNZO LUISA 13.4", "MARTIRIO MARIA VITTORIA 14.2", "MARTIRIO ALBERTO RICCARDO 14.2", "REA PAOLA 14.8", "BUFALO FILIPPO 15.1", "CALIGNANO GENNARO 14,6", "CASCONE CHRISTIAN (U17 reg. BARONE) 16.3", "CIRILLO ARTURO 15,3", "COSTA ANTONIO 15,3", "COZZOLINO RAFFAELE 14,5", "GAUDINO CIRO 14,2", "GIULIANO DANIELE", "IAVAZZO JACOPO PIO 15,2", "LOJACONO FRANCESCO 15,7", "NESPOLI LORENZO 14,2", "NOBILE CHRISTIAN 12,8", "PANICO GIULIO 15,1", "PEPE GABRIEL", "STORNAIUOLO GIOVANNI 14,6", "SALZA SIMONE 14,6", "TROIA GENNARO DIEGO 14,8" ];
+
+const arbitriFascia4 = ["TEST ARBITRO 1", "TEST ARBITRO 2", "TEST ARBITRO 3"];
+
+const categorie = ["Terza Categoria", "Seconda Categoria", "Juniores", "Under 18", "Under 17R", "Under 16R", "Under 15R", "Under 14R", "Under 17P", "Under 16P", "Under 15P", "Under 14P", "Esordienti","---DA QUI TUTOR---","Caiazzo", "Caridi", "Castello", "Cifariello", "Di Iorio", "Frisulli", "Giunta", "Minieri", "Pipola", "Pisano", "sarno", "Sedente"];
+const weekendHeaders = ["Arbitro", "Gare","10-11 Maggio"];
+
+//const weekendHeaders = ["Arbitro", "Gare", "3-4 Maggio", "10-11 Maggio", "17-18 Maggio", "24-25 Maggio", "31 Maggio - 1 Giugno", "7-8 Giugno"];
+
+document.getElementById('login-btn').addEventListener('click', login);
+document.getElementById('username').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+document.getElementById('export-btn').addEventListener('click', exportToPDF);
+
+function login() {
+  const user = document.getElementById('username').value;
+  if (user === validUser) {
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    loadTables();
+  } else {
+    document.getElementById('login-error').textContent = "Username errato.";
+  }
+}
+
+function loadTables() {
+  loadTable('designazioni-table', arbitriUNDER15);
+  loadTable('designazioni-table-2', arbitriUNDER14);
+  loadTable('designazioni-table-3', arbitriFascia3);
+  loadTable('designazioni-table-4', arbitriFascia4);
+}
+
+function loadTable(tableId, arbitriList) {
+  const table = document.getElementById(tableId);
+  table.innerHTML = "";
+
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  weekendHeaders.forEach((text, idx) => {
+    const th = document.createElement('th');
+    th.textContent = text;
+    th.dataset.colIndex = idx;
+    if (idx >= 2) {
+      th.addEventListener('click', () => toggleColonna(table, idx));
+    }
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  arbitriList.forEach((nome, rIdx) => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-row-index', rIdx);
+
+    const tdNome = document.createElement('td'); tdNome.textContent = nome; tr.appendChild(tdNome);
+    const tdGare = document.createElement('td'); tdGare.textContent = '0'; tdGare.classList.add('conteggio-gare'); tr.appendChild(tdGare);
+
+    for (let i = 2; i < weekendHeaders.length; i++) {
+      const td = document.createElement('td');
+
+      const labelIndisp = document.createElement('label');
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'indisponibilita-check';
+      labelIndisp.appendChild(chk);
+      labelIndisp.appendChild(document.createTextNode(' Indisp. '));
+      td.appendChild(labelIndisp);
+
+      const sel = document.createElement('select'); sel.className = 'indisponibilita-select';
+      sel.innerHTML = "<option value=''>--Tipo--</option><option value='Totale'>Totale</option><option value='Parziale'>Parziale</option>";
+
+      const giorniDiv = document.createElement('div');
+      giorniDiv.className = 'giorni-parziali';
+      giorniDiv.innerHTML = `
+        <label><input type="checkbox" class="giorno-check" value="Sabato"> Sab</label>
+        <label><input type="checkbox" class="giorno-check" value="Domenica"> Dom</label>
+        <label><input type="checkbox" class="giorno-check" value="Lunedi"> Lun</label>
+      `;
+
+      const selCat = document.createElement('select');
+      selCat.className = 'categoria-select';
+      selCat.innerHTML = "<option value=''>--Categoria--</option>" + categorie.map(c => `<option value="${c}">${c}</option>`).join("");
+
+      td.appendChild(sel);
+      td.appendChild(document.createElement('br'));
+      td.appendChild(giorniDiv);
+      td.appendChild(selCat);
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  table.addEventListener('change', handleChangeEvents);
+}
+
+function handleChangeEvents(e) {
+  const el = e.target;
+  const td = el.closest('td');
+  const selTipo = td.querySelector('.indisponibilita-select');
+  const giorniDiv = td.querySelector('.giorni-parziali');
+  const selCat = td.querySelector('.categoria-select');
+  const chk = td.querySelector('.indisponibilita-check');
+  const tr = el.closest('tr');
+
+  if (el.classList.contains('indisponibilita-check')) {
+    selTipo.style.display = chk.checked ? 'inline-block' : 'none';
+    giorniDiv.style.display = 'none';
+    td.classList.remove('indisponibile', 'designato');
+    selCat.disabled = false;
+  }
+
+  if (el.classList.contains('indisponibilita-select')) {
+    if (selTipo.value === 'Totale') {
+      td.classList.add('indisponibile');
+      selCat.value = '';
+      selCat.disabled = true;
+      giorniDiv.style.display = 'none';
+    } else if (selTipo.value === 'Parziale') {
+      td.classList.remove('indisponibile');
+      giorniDiv.style.display = 'block';
+      selCat.disabled = false;
+      if (selCat.value) td.classList.add('designato');
+    } else {
+      td.classList.remove('indisponibile');
+      giorniDiv.style.display = 'none';
+      selCat.disabled = false;
+    }
+  }
+
+  if (el.classList.contains('categoria-select')) {
+    if (selCat.value && (!chk || !chk.checked || (selTipo && selTipo.value === 'Parziale'))) {
+      td.classList.add('designato');
+      td.classList.remove('indisponibile');
+    } else {
+      td.classList.remove('designato');
+    }
+    updateGare(tr);
+  }
+}
+
+function updateGare(row) {
+  const catSelects = row.querySelectorAll('.categoria-select');
+  const gare = Array.from(catSelects).filter(s => {
+    const td = s.closest('td');
+    const chk = td.querySelector('.indisponibilita-check');
+    const tipo = td.querySelector('.indisponibilita-select')?.value;
+    return s.value && (!chk.checked || tipo === 'Parziale');
+  }).length;
+  row.querySelector('.conteggio-gare').textContent = gare;
+}
+
+function toggleColonna(table, colIndex) {
+  const rows = table.querySelectorAll('tr');
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('th, td');
+    if (cells[colIndex]) {
+      cells[colIndex].classList.toggle('colonna-selezionata');
+    }
+  });
+}
+
+async function exportToPDF() {
+  const dashboard = document.getElementById('dashboard');
+  const canvas = await html2canvas(dashboard, { scale: 2 });
+  const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'landscape' });
+  const width = pdf.internal.pageSize.getWidth();
+  const height = (canvas.height * width) / canvas.width;
+  pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+  pdf.save('designazioni.pdf');
+}
+</script>
+
+</body>
+</html>
